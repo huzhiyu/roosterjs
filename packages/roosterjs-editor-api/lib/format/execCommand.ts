@@ -1,4 +1,3 @@
-import execFormatWithUndo from './execFormatWithUndo';
 import getFormatState from './getFormatState';
 import getNodeAtCursor from '../cursor/getNodeAtCursor';
 import queryNodesWithSelection from '../cursor/queryNodesWithSelection';
@@ -33,7 +32,7 @@ export default function execCommand(
     if (range && range.collapsed && !addUndoSnapshotWhenCollapsed) {
         callback();
     } else {
-        execFormatWithUndo(editor, callback);
+        editor.runWithUndo(callback);
     }
 }
 

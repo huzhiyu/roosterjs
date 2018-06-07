@@ -1,7 +1,5 @@
 import EditorCore from './EditorCore';
 import EditorOptions from './EditorOptions';
-import Undo from '../undo/Undo';
-import UndoService from './UndoService';
 import browserData from '../utils/BrowserData';
 import createEditorCore from './createEditorCore';
 import {
@@ -9,6 +7,7 @@ import {
     ContentPosition,
     ContentScope,
     DefaultFormat,
+    DocumentCommand,
     ExtractContentEvent,
     InlineElement,
     InsertOption,
@@ -36,13 +35,13 @@ import {
 const IS_IE_OR_EDGE = browserData.isIE || browserData.isEdge;
 
 export default class Editor {
-    private undoService: UndoService;
-    private suspendAddingUndoSnapshot: boolean;
     private omitContentEditable: boolean;
     private disableRestoreSelectionOnFocus: boolean;
     private inIME: boolean;
     private core: EditorCore;
     private eventDisposers: (() => void)[];
+
+    //#region Lifecycle
 
     /**
      * Creates an instance of Editor
@@ -78,9 +77,8 @@ export default class Editor {
 
         // 5. Initialize undo service
         // This need to be after step 4 so that undo service can pickup initial content
-        this.undoService = options.undo || new Undo();
-        this.undoService.initialize(this);
-        this.core.plugins.push(this.undoService);
+        this.core.undo.initialize(this);
+        this.core.plugins.push(this.core.undo);
 
         // 6. Create event handler to bind DOM events
         this.createEventHandlers();
@@ -95,8 +93,8 @@ export default class Editor {
         // 8. Disable these operations for firefox since its behavior is usually wrong
         // Catch any possible exception since this should not block the initialization of editor
         try {
-            this.core.document.execCommand('enableObjectResizing', false, false);
-            this.core.document.execCommand('enableInlineTableEditing', false, false);
+            this.core.document.execCommand(DocumentCommand.EnableObjectResizing, false, false);
+            this.core.document.execCommand(DocumentCommand.EnableInlineTableEditing, false, false);
         } catch (e) {}
 
         // 9. Start a timer loop if required
@@ -161,6 +159,8 @@ export default class Editor {
     public isDisposed(): boolean {
         return !this.core;
     }
+
+    //#endregion
 
     //#region Node API
 
@@ -452,7 +452,7 @@ export default class Editor {
      */
     public undo() {
         this.focus();
-        this.undoService.undo();
+        this.core.undo.undo();
     }
 
     /**
@@ -460,28 +460,49 @@ export default class Editor {
      */
     public redo() {
         this.focus();
-        this.undoService.redo();
+        this.core.undo.redo();
     }
 
     /**
-     * Run a callback with undo suspended.
-     * @param callback The callback to run
+     * Add undo snapshot, and execute a format callback function, then add another undo snapshot, then trigger
+     * ContentChangedEvent with given change source.
+     * If this function is called nested, undo snapshot will only be added in the outside one
+     * @param callback The callback function to perform formatting
+     * @param changeSource The change source to use when fire ContentChangedEvent. Default value is 'Format'
+     * If pass null, the event will not be fired.
+     * @param getDataCallback A callback function to retrieve the data for ContentChangedEvent
+     */
+    public runWithUndo(
+        callback?: () => any,
+        changeSource: ChangeSource | string = ChangeSource.Format,
+        getDataCallback?: () => any
+    ) {
+        this.core.api.runWithUndo(
+            this.core,
+            callback,
+            changeSource,
+            getDataCallback
+        );
+    }
+
+    /**
+     * @deprecated Use runWithUndo() instead
      */
     public runWithoutAddingUndoSnapshot(callback: () => void) {
         try {
-            this.suspendAddingUndoSnapshot = true;
+            this.core.suspendUndo = true;
             callback();
         } finally {
-            this.suspendAddingUndoSnapshot = false;
+            this.core.suspendUndo = false;
         }
     }
 
     /**
-     * Add an undo snapshot if undo is not suspended
+     * @deprecated Use runWithUndo() instead
      */
     public addUndoSnapshot() {
-        if (!this.suspendAddingUndoSnapshot) {
-            this.undoService.addUndoSnapshot();
+        if (!this.core.suspendUndo) {
+            this.core.undo.addUndoSnapshot();
         }
     }
 
@@ -489,14 +510,14 @@ export default class Editor {
      * Whether there is an available undo snapshot
      */
     public canUndo(): boolean {
-        return this.undoService.canUndo();
+        return this.core.undo.canUndo();
     }
 
     /**
      * Whether there is an available redo snapshot
      */
     public canRedo(): boolean {
-        return this.undoService.canRedo();
+        return this.core.undo.canRedo();
     }
 
     //#endregion

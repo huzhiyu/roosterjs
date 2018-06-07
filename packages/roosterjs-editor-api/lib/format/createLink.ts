@@ -1,6 +1,5 @@
-import execFormatWithUndo from './execFormatWithUndo';
 import queryNodesWithSelection from '../cursor/queryNodesWithSelection';
-import { ChangeSource } from 'roosterjs-editor-types';
+import { ChangeSource, DocumentCommand } from 'roosterjs-editor-types';
 import { Editor } from 'roosterjs-editor-core';
 import { matchLink } from 'roosterjs-editor-dom';
 
@@ -68,7 +67,7 @@ export default function createLink(
         let originalUrl = linkData ? linkData.originalUrl : url;
         let anchor: HTMLAnchorElement = null;
 
-        execFormatWithUndo(editor, () => {
+        editor.runWithUndo(() => {
             let range = editor.getSelectionRange();
             if (range && range.collapsed) {
                 anchor = getAnchorNodeAtCursor(editor);
@@ -86,7 +85,7 @@ export default function createLink(
                 }
             } else {
                 /* the selection is not collapsed, use browser execCommand */
-                editor.getDocument().execCommand('createLink', false, normalizedUrl);
+                editor.getDocument().execCommand(DocumentCommand.CreateLink, false, normalizedUrl);
                 anchor = getAnchorNodeAtCursor(editor);
                 updateAnchorDisplayText(anchor, displayText);
             }
@@ -97,9 +96,7 @@ export default function createLink(
                 anchor.removeAttribute(TEMP_TITLE);
                 anchor.title = altText;
             }
-        });
-
-        editor.triggerContentChangedEvent(ChangeSource.CreateLink, anchor);
+        }, ChangeSource.CreateLink, () => anchor);
     }
 }
 

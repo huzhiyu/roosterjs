@@ -1,5 +1,7 @@
 import EditorPlugin from '../editor/EditorPlugin';
+import UndoService from '../editor/UndoService';
 import {
+    ChangeSource,
     ContentScope,
     ContentPosition,
     DefaultFormat,
@@ -15,6 +17,8 @@ interface EditorCore {
     contentDiv: HTMLDivElement;
     plugins: EditorPlugin[];
     defaultFormat: DefaultFormat;
+    undo: UndoService;
+    suspendUndo: boolean;
     customData: {
         [Key: string]: {
             value: any;
@@ -52,6 +56,12 @@ export type GetCustomData = <T>(
 export type GetSelectionRange = (core: EditorCore, tryGetFromCache: boolean) => Range;
 export type HasFocus = (core: EditorCore) => boolean;
 export type InsertNode = (core: EditorCore, node: Node, option: InsertOption) => boolean;
+export type RunWithUndo = (
+    core: EditorCore,
+    callback: () => any,
+    changeSource: ChangeSource | string,
+    getDataCallback: () => any
+) => void;
 export type TriggerEvent = (core: EditorCore, pluginEvent: PluginEvent, broadcast: boolean) => void;
 export type UpdateSelection = (core: EditorCore, range: Range) => boolean;
 
@@ -65,6 +75,7 @@ export interface CoreApiMap {
     getSelectionRange: GetSelectionRange;
     hasFocus: HasFocus;
     insertNode: InsertNode;
+    runWithUndo: RunWithUndo;
     triggerEvent: TriggerEvent;
     updateSelection: UpdateSelection;
 }

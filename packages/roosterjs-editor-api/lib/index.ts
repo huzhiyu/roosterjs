@@ -23,6 +23,7 @@ export { default as insertImage } from './format/insertImage';
 export { default as insertTable } from './table/insertTable';
 export { default as editTable } from './table/editTable';
 export { default as formatTable } from './table/formatTable';
+export { default as keepSelection } from './format/keepSelection';
 export { default as removeLink } from './format/removeLink';
 export { default as setAlignment } from './format/setAlignment';
 export { default as setBackgroundColor } from './format/setBackgroundColor';

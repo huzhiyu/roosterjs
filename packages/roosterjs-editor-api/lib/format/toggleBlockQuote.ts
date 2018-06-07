@@ -1,4 +1,4 @@
-import execFormatWithUndo from './execFormatWithUndo';
+import keepSelection from './keepSelection';
 import queryNodesWithSelection from '../cursor/queryNodesWithSelection';
 import getNodeAtCursor from '../cursor/getNodeAtCursor';
 import { getTagOfNode, splitParentNode, unwrap, wrap } from 'roosterjs-editor-dom';
@@ -24,29 +24,30 @@ let defaultStyler = (element: HTMLElement) => {
 export default function toggleBlockQuote(editor: Editor, styler?: (element: HTMLElement) => void) {
     editor.focus();
     let blockquoteNodes = queryNodesWithSelection(editor, 'blockquote');
-    execFormatWithUndo(
-        editor,
-        (startPoint, endPoint) => {
-            if (blockquoteNodes.length) {
-                // There are already blockquote nodes, unwrap them
-                blockquoteNodes.forEach(node => unwrap(node));
-            } else {
-                // Step 1: Find all block elements and their content nodes
-                let nodes = getContentNodes(editor);
+    editor.runWithUndo(
+        () => keepSelection(
+            editor,
+            (startPoint, endPoint) => {
+                if (blockquoteNodes.length) {
+                    // There are already blockquote nodes, unwrap them
+                    blockquoteNodes.forEach(node => unwrap(node));
+                } else {
+                    // Step 1: Find all block elements and their content nodes
+                    let nodes = getContentNodes(editor);
 
-                // Step 2: Split existing list container if necessary
-                nodes = getSplittedListNodes(nodes);
+                    // Step 2: Split existing list container if necessary
+                    nodes = getSplittedListNodes(nodes);
 
-                // Step 3: Handle some special cases
-                nodes = getNodesWithSpecialCaseHandled(editor, nodes, startPoint, endPoint);
+                    // Step 3: Handle some special cases
+                    nodes = getNodesWithSpecialCaseHandled(editor, nodes, startPoint, endPoint);
 
-                let quoteElement = wrap(nodes, 'blockquote');
-                (styler || defaultStyler)(quoteElement);
+                    let quoteElement = wrap(nodes, 'blockquote');
+                    (styler || defaultStyler)(quoteElement);
 
-                return quoteElement;
+                    return quoteElement;
+                }
             }
-        },
-        true /*preserveSelection*/
+        )
     );
 }
 

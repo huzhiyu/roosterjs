@@ -1,5 +1,6 @@
 import EditorCore, { CoreApiMap } from './EditorCore';
 import EditorOptions from './EditorOptions';
+import Undo from '../undo/Undo';
 import applyInlineStyle from '../coreAPI/applyInlineStyle';
 import attachDomEvent from '../coreAPI/attachDomEvent';
 import focus from '../coreAPI/focus';
@@ -9,6 +10,7 @@ import getCursorRect from '../coreAPI/getCursorRect';
 import getSelectionRange from '../coreAPI/getSelectionRange';
 import hasFocus from '../coreAPI/hasFocus';
 import insertNode from '../coreAPI/insertNode';
+import runWithUndo from '../coreAPI/runWithUndo';
 import triggerEvent from '../coreAPI/triggerEvent';
 import updateSelection from '../coreAPI/updateSelection';
 import { DefaultFormat } from 'roosterjs-editor-types';
@@ -22,6 +24,8 @@ export default function createEditorCore(
         contentDiv: contentDiv,
         document: contentDiv.ownerDocument,
         defaultFormat: calcDefaultFormat(contentDiv, options.defaultFormat),
+        undo: options.undo || new Undo(),
+        suspendUndo: false,
         customData: {},
         cachedSelectionRange: null,
         plugins: (options.plugins || []).filter(plugin => !!plugin),
@@ -60,6 +64,7 @@ function createCoreApiMap(map: Partial<CoreApiMap>): CoreApiMap {
         getSelectionRange: map.getSelectionRange || getSelectionRange,
         hasFocus: map.hasFocus || hasFocus,
         insertNode: map.insertNode || insertNode,
+        runWithUndo: map.runWithUndo || runWithUndo,
         triggerEvent: map.triggerEvent || triggerEvent,
         updateSelection: map.updateSelection || updateSelection,
     };

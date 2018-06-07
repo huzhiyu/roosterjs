@@ -11,6 +11,7 @@ export {
     GetSelectionRange,
     HasFocus,
     InsertNode,
+    RunWithUndo,
     TriggerEvent,
     UpdateSelection,
 } from './editor/EditorCore';

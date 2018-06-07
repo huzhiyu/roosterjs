@@ -1,8 +1,8 @@
-import execFormatWithUndo from '../format/execFormatWithUndo';
 import getNodeAtCursor from '../cursor/getNodeAtCursor';
 import { Editor } from 'roosterjs-editor-core';
 import { TableOperation } from 'roosterjs-editor-types';
 import { VTable, contains } from 'roosterjs-editor-dom';
+import keepSelection from '../format/keepSelection';
 
 /**
  * Edit table with given operation. If there is no table at cursor then no op.
@@ -12,9 +12,8 @@ import { VTable, contains } from 'roosterjs-editor-dom';
 export default function editTable(editor: Editor, operation: TableOperation) {
     let td = getNodeAtCursor(editor, ['TD', 'TH']) as HTMLTableCellElement;
     if (td) {
-        execFormatWithUndo(
-            editor,
-            () => {
+        editor.runWithUndo(() => {
+            keepSelection(editor, () => {
                 let vtable = new VTable(td);
                 let currentRow = vtable.cells[vtable.row];
                 let currentCell = currentRow[vtable.col];
@@ -142,9 +141,8 @@ export default function editTable(editor: Editor, operation: TableOperation) {
                 if (!editor.contains(td)) {
                     td = vtable.getCurrentTd();
                 }
-            },
-            true /*preserveSelection*/
-        );
+            });
+        });
         let range = editor.getSelectionRange();
         if (!contains(td, range.startContainer) && td != range.startContainer) {
             range.setStart(td, 0);

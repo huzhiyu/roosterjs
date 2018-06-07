@@ -1,5 +1,5 @@
-import execFormatWithUndo from './execFormatWithUndo';
-import { Alignment } from 'roosterjs-editor-types';
+import execCommand from './execCommand';
+import { Alignment, DocumentCommand } from 'roosterjs-editor-types'
 import { Editor } from 'roosterjs-editor-core';
 
 /**
@@ -9,14 +9,8 @@ import { Editor } from 'roosterjs-editor-core';
  * Alignment.Center, Alignment.Left, Alignment.Right
  */
 export default function setAlignment(editor: Editor, alignment: Alignment) {
-    editor.focus();
-    let command = 'justifyLeft';
-    if (alignment == Alignment.Center) {
-        command = 'justifyCenter';
-    } else if (alignment == Alignment.Right) {
-        command = 'justifyRight';
-    }
-    execFormatWithUndo(editor, () => {
-        editor.getDocument().execCommand(command, false, null);
-    });
+    let command = alignment == Alignment.Left ? DocumentCommand.JustifyLeft :
+        alignment == Alignment.Center ? DocumentCommand.JustifyCenter :
+        DocumentCommand.JustifyRight;
+    execCommand(editor, command, true /*addUndoSnapshotWhenCollapsed*/);
 }

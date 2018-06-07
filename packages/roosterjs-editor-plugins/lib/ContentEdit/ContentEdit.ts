@@ -3,7 +3,6 @@ import {
     setIndentation,
     cacheGetNodeAtCursor,
     cacheGetListState,
-    execFormatWithUndo,
     getNodeAtCursor,
     queryNodesWithSelection,
     toggleBullet,
@@ -160,7 +159,7 @@ export default class ContentEdit implements EditorPlugin {
                 }
                 if (node.parentNode == blockQuoteElement && this.shouldToggleState(event, node)) {
                     keyboardEvent.preventDefault();
-                    execFormatWithUndo(this.editor, () => {
+                    this.editor.runWithUndo(() => {
                         splitParentNode(node, false /*splitBefore*/);
 
                         blockQuoteElement.parentNode.insertBefore(
@@ -208,9 +207,7 @@ export default class ContentEdit implements EditorPlugin {
             this.editor.runAsync(() => {
                 let listNode: Node;
 
-                // editor.insertContent(NBSP);
-                this.editor.addUndoSnapshot();
-                this.editor.runWithoutAddingUndoSnapshot(() => {
+                this.editor.runWithUndo(() => {
                     // Remove the user input '*', '-' or '1.'
                     let rangeToDelete =
                         validateAndGetRangeForTextBeforeCursor(
@@ -244,12 +241,9 @@ export default class ContentEdit implements EditorPlugin {
                     }
 
                     this.editor.deleteNode(tempBr);
-                });
-
-                this.editor.addUndoSnapshot();
+                }, ChangeSource.AutoBullet, () => listNode);
 
                 if (listNode) {
-                    this.editor.triggerContentChangedEvent(ChangeSource.AutoBullet, listNode);
                     this.backspaceToUndo = true;
                 }
             });
